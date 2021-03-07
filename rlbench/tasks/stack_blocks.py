@@ -9,8 +9,8 @@ from rlbench.backend.conditions import NothingGrasped
 from rlbench.backend.spawn_boundary import SpawnBoundary
 from rlbench.const import colors
 
-MAX_STACKED_BLOCKS = 3
-DISTRACTORS = 4
+MAX_STACKED_BLOCKS = 2
+DISTRACTORS = 0
 
 
 class StackBlocks(Task):
