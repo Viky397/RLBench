@@ -23,7 +23,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('save_path',
                     '/tmp/rlbench_data/',
                     'Where to save the demos.')
-flags.DEFINE_list('tasks', [],
+flags.DEFINE_list('tasks', ['stack_blocks'],
                   'The tasks to collect. If empty, all tasks are collected.')
 flags.DEFINE_list('image_size', [128, 128],
                   'The size of the images tp save.')
@@ -270,6 +270,7 @@ def main(argv):
         task_files = FLAGS.tasks
 
     tasks = [task_file_to_task_class(t) for t in task_files]
+    print(tasks)
 
     manager = Manager()
 
