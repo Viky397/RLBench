@@ -3,6 +3,37 @@ from rlbench.action_modes import ArmActionMode, ActionMode
 from rlbench.observation_config import ObservationConfig
 from rlbench.tasks import ReachTarget
 import numpy as np
+import torch
+from torch import nn
+from torch_geometric.nn import GCNConv, global_mean_pool
+import torch.nn.functional as F
+from torch_geometric.data import Data
+from torch_geometric.data import DataLoader
+
+
+class SimpleGCNModel(nn.Module):
+
+    def __init__(self, num_node_features, num_output_channels):
+        super(SimpleGCNModel, self).__init__()
+        hidden_layers = 64
+        self.conv1 = GCNConv(num_node_features, hidden_layers)
+        self.conv2 = GCNConv(hidden_layers, hidden_layers)
+        self.conv3 = GCNConv(hidden_layers, hidden_layers)
+        self.lin = nn.Linear(hidden_layers, num_output_channels)
+
+    def forward(self, x, edge_index, batch):
+
+        # Node embedding
+        x = F.relu(self.conv1(x, edge_index))
+        x = F.relu(self.conv2(x, edge_index))
+        x = self.conv3(x, edge_index)
+
+        # Node aggregation
+        x = global_mean_pool(x, batch)
+
+        x = self.lin(x)
+
+        return x
 
 
 class Agent(object):
@@ -17,14 +48,13 @@ class Agent(object):
 
     def act(self, obs):
         # arm = np.random.normal(0.0, 0.1, size=(self.action_size - 1,))
-        obs.task_low_dim_state[0]
         
-        target_node = np.concatenate((data[k][0], self.target_enc))
-        distract_node = np.concatenate((data[k][1], self.distract_enc))
-        distract2_node = np.concatenate((data[k][2], self.distract_enc))
-        gripper_node = np.concatenate((data[k][3], self.gripper_enc))
+        target_node = np.concatenate((obs.task_low_dim_state['target'], self.target_enc))
+        distract_node = np.concatenate((obs.task_low_dim_state['distractor0'], self.distract_enc))
+        distract2_node = np.concatenate((obs.task_low_dim_state['distractor1'], self.distract_enc))
+        gripper_node = np.concatenate((obs.task_low_dim_state['tip'], self.gripper_enc))
         nodes = torch.tensor([target_node, distract_node, distract2_node, gripper_node], dtype=torch.float)
-
+        dataset = []
         edge_index = torch.tensor([[0, 1],
                                            [1, 0],
                                            [0, 2],
@@ -37,12 +67,16 @@ class Agent(object):
                                            [3, 1],
                                            [2, 3],
                                            [3, 2]], dtype=torch.long)
-        y = torch.tensor([data[k + 1][3]], dtype=torch.float)
-        graph_data = Data(x=nodes, edge_index=edge_index.t().contiguous(), y=y)
-        
-        out = model(graph_data.x, graph_data.edge_index, 1)
+        graph_data = Data(x=nodes, edge_index=edge_index.t().contiguous())
+
+        dataset.append(graph_data)
+        loader = DataLoader(dataset, batch_size=1)
+
+        for dat in loader:            
+            out = self.model(graph_data.x, graph_data.edge_index, dat.batch)
 
         arm = out[0] # Only one thing in batch
+
         # gripper = [1.0]  # Always open
         rotation = [0, 0, 0]
 
