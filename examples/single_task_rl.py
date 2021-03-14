@@ -46,13 +46,16 @@ class Agent(object):
         self.distract_enc = np.asarray([0, 1, 0])
         self.gripper_enc = np.asarray([0, 0, 1])
 
+        checkpoint = torch.load("/home/veronica/RLBench/rlbench/graph_model.pth")
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+
     def act(self, obs):
         # arm = np.random.normal(0.0, 0.1, size=(self.action_size - 1,))
         
-        target_node = np.concatenate((obs.task_low_dim_state['target'], self.target_enc))
-        distract_node = np.concatenate((obs.task_low_dim_state['distractor0'], self.distract_enc))
-        distract2_node = np.concatenate((obs.task_low_dim_state['distractor1'], self.distract_enc))
-        gripper_node = np.concatenate((obs.task_low_dim_state['tip'], self.gripper_enc))
+        target_node = np.concatenate((obs.task_low_dim_state[0], self.target_enc))
+        distract_node = np.concatenate((obs.task_low_dim_state[1], self.distract_enc))
+        distract2_node = np.concatenate((obs.task_low_dim_state[2], self.distract_enc))
+        gripper_node = np.concatenate((obs.task_low_dim_state[3], self.gripper_enc))
         nodes = torch.tensor([target_node, distract_node, distract2_node, gripper_node], dtype=torch.float)
         dataset = []
         edge_index = torch.tensor([[0, 1],
@@ -86,9 +89,8 @@ class Agent(object):
 obs_config = ObservationConfig()
 obs_config.set_all(True)
 
-action_mode = ActionMode(ArmActionMode.ABS_EE_POSE_PLAN_WORLD_FRAME)
-env = Environment(
-    action_mode, obs_config=obs_config, headless=False)
+action_mode = ActionMode(ArmActionMode.ABS_EE_POSE_WORLD_FRAME)
+env = Environment(action_mode, obs_config=obs_config, headless=False)
 env.launch()
 
 task = env.get_task(ReachTarget)
