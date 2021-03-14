@@ -12,6 +12,7 @@ from rlbench.const import colors
 MAX_STACKED_BLOCKS = 2
 DISTRACTORS = 0
 
+print("yes")
 
 class StackBlocks(Task):
 

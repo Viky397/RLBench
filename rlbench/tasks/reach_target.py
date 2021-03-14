@@ -46,7 +46,7 @@ class ReachTarget(Task):
     def get_low_dim_state(self) -> dict:
         # One of the few tasks that have a custom low_dim_state function.
 
-        return {'target':self.target.get_position(), 'distractor0':self.distractor0.get_position(), 'distractor1':self.distractor1.get_position(),'tip': self.robot.arm.get_tip()}
+        return {'target':self.target.get_position(), 'distractor0':self.distractor0.get_position(), 'distractor1':self.distractor1.get_position(),'tip': self.robot.arm.get_tip().get_position()}
 
     def is_static_workspace(self) -> bool:
         return True

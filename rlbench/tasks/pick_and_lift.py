@@ -3,8 +3,7 @@ import numpy as np
 from pyrep.objects.shape import Shape
 from pyrep.objects.proximity_sensor import ProximitySensor
 from rlbench.backend.task import Task
-from rlbench.backend.conditions import DetectedCondition, ConditionSet, \
-    GraspedCondition
+from rlbench.backend.conditions import DetectedCondition, ConditionSet, GraspedCondition
 from rlbench.backend.spawn_boundary import SpawnBoundary
 from rlbench.const import colors
 
@@ -52,3 +51,7 @@ class PickAndLift(Task):
 
     def variation_count(self) -> int:
         return len(colors)
+    
+    def get_low_dim_state(self) -> dict:
+        return {'target':self.target.get_position(), 'distractor0':self.distractor0.get_position(), 'distractor1':self.distractor1.get_position(),'tip': self.robot.arm.get_tip().get_position()}
+
