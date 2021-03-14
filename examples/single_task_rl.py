@@ -73,19 +73,20 @@ class Agent(object):
         loader = DataLoader(dataset, batch_size=1)
 
         for dat in loader:            
-            out = self.model(graph_data.x, graph_data.edge_index, dat.batch)
+            out = self.model(dat.x, dat.edge_index, dat.batch)
+            break
 
-        arm = out[0] # Only one thing in batch
+        arm = out[0].detach().numpy() # Only one thing in batch
 
-        # gripper = [1.0]  # Always open
-        rotation = [0, 0, 0]
-
-        return np.concatenate([arm, rotation], axis=-1)
+        gripper = [1.0]  # Always open
+        rotation = obs.gripper_pose[3:]
+        # print(rotation)
+        return np.concatenate([arm, rotation, gripper], axis=-1)
 
 obs_config = ObservationConfig()
 obs_config.set_all(True)
 
-action_mode = ActionMode(ArmActionMode.ABS_EE_POSE_WORLD_FRAME)
+action_mode = ActionMode(ArmActionMode.ABS_EE_POSE_PLAN_WORLD_FRAME)
 env = Environment(
     action_mode, obs_config=obs_config, headless=False)
 env.launch()
@@ -102,8 +103,10 @@ for i in range(training_steps):
         print('Reset Episode')
         descriptions, obs = task.reset()
         print(descriptions)
+
     action = agent.act(obs)
-    print(action)
+
+    print("action:", action)
     obs, reward, terminate = task.step(action)
 
 print('Done')
