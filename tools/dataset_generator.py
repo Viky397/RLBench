@@ -33,7 +33,7 @@ flags.DEFINE_enum('renderer',  'opengl3', ['opengl', 'opengl3'],
                   'but is faster.')
 flags.DEFINE_integer('processes', 1,
                      'The number of parallel processes during collection.')
-flags.DEFINE_integer('episodes_per_task', 10,
+flags.DEFINE_integer('episodes_per_task', 100,
                      'The number of episodes to collect per task.')
 flags.DEFINE_integer('variations', -1,
                      'Number of variations to collect per task. -1 for all.')
