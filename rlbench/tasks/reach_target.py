@@ -98,7 +98,7 @@ class ReachTarget(Task):
 
     def get_low_dim_state(self) -> np.array:
         # Custom
-        return [self.target.get_position(), self.distractor0.get_position(), self.distractor1.get_position(), self.robot.arm.get_tip().get_position()]
+        return [self.target.get_position(), self.target.get_pose(), self.distractor0.get_quaternion(), self.distractor0.get_position(), self.distractor1.get_position(), self.robot.arm.get_tip().get_position()]
 
         # return {'target':self.target.get_position(), 'distractor0':self.distractor0.get_position(), 'distractor1':self.distractor1.get_position(),'tip': self.robot.arm.get_tip().get_position()}
 
