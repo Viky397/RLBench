@@ -22,16 +22,16 @@ import numpy as np
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('save_path',
-                    '/tmp/rlbench_data/',
+                    '/home/mustafa/Desktop/',
                     'Where to save the demos.')
-flags.DEFINE_list('tasks', ['reach_target'],
+flags.DEFINE_list('tasks', ['pick_and_lift'],
                   'The tasks to collect. If empty, all tasks are collected.')
 flags.DEFINE_list('image_size', [128, 128],
                   'The size of the images tp save.')
 flags.DEFINE_enum('renderer',  'opengl3', ['opengl', 'opengl3'],
                   'The renderer to use. opengl does not include shadows, '
                   'but is faster.')
-flags.DEFINE_integer('processes', 1,
+flags.DEFINE_integer('processes', 4,
                      'The number of parallel processes during collection.')
 flags.DEFINE_integer('episodes_per_task', 100,
                      'The number of episodes to collect per task.')
@@ -79,45 +79,48 @@ def save_demo(demo, example_path):
     check_and_make(front_depth_path)
     check_and_make(front_mask_path)
 
-    for i, obs in enumerate(demo):
-        left_shoulder_rgb = Image.fromarray(
-            (obs.left_shoulder_rgb * 255).astype(np.uint8))
-        left_shoulder_depth = utils.float_array_to_rgb_image(
-            obs.left_shoulder_depth, scale_factor=DEPTH_SCALE)
-        left_shoulder_mask = Image.fromarray(
-            (obs.left_shoulder_mask * 255).astype(np.uint8))
-        right_shoulder_rgb = Image.fromarray(
-            (obs.right_shoulder_rgb * 255).astype(np.uint8))
-        right_shoulder_depth = utils.float_array_to_rgb_image(
-            obs.right_shoulder_depth, scale_factor=DEPTH_SCALE)
-        right_shoulder_mask = Image.fromarray(
-            (obs.right_shoulder_mask * 255).astype(np.uint8))
+    state_data = []
+    low_dim_state_data = []
 
-        wrist_rgb = Image.fromarray((obs.wrist_rgb * 255).astype(np.uint8))
-        wrist_depth = utils.float_array_to_rgb_image(
-            obs.wrist_depth, scale_factor=DEPTH_SCALE)
-        wrist_mask = Image.fromarray((obs.wrist_mask * 255).astype(np.uint8))
+    for i, obs in enumerate(demo):
+        # left_shoulder_rgb = Image.fromarray(
+        #     (obs.left_shoulder_rgb * 255).astype(np.uint8))
+        # left_shoulder_depth = utils.float_array_to_rgb_image(
+        #     obs.left_shoulder_depth, scale_factor=DEPTH_SCALE)
+        # left_shoulder_mask = Image.fromarray(
+        #     (obs.left_shoulder_mask * 255).astype(np.uint8))
+        # right_shoulder_rgb = Image.fromarray(
+        #     (obs.right_shoulder_rgb * 255).astype(np.uint8))
+        # right_shoulder_depth = utils.float_array_to_rgb_image(
+        #     obs.right_shoulder_depth, scale_factor=DEPTH_SCALE)
+        # right_shoulder_mask = Image.fromarray(
+        #     (obs.right_shoulder_mask * 255).astype(np.uint8))
+
+        # wrist_rgb = Image.fromarray((obs.wrist_rgb * 255).astype(np.uint8))
+        # wrist_depth = utils.float_array_to_rgb_image(
+        #     obs.wrist_depth, scale_factor=DEPTH_SCALE)
+        # wrist_mask = Image.fromarray((obs.wrist_mask * 255).astype(np.uint8))
 
         front_rgb = Image.fromarray((obs.front_rgb * 255).astype(np.uint8))
         front_depth = utils.float_array_to_rgb_image(
             obs.front_depth, scale_factor=DEPTH_SCALE)
         front_mask = Image.fromarray((obs.front_mask * 255).astype(np.uint8))
 
-        left_shoulder_rgb.save(
-            os.path.join(left_shoulder_rgb_path, IMAGE_FORMAT % i))
-        left_shoulder_depth.save(
-            os.path.join(left_shoulder_depth_path, IMAGE_FORMAT % i))
-        left_shoulder_mask.save(
-            os.path.join(left_shoulder_mask_path, IMAGE_FORMAT % i))
-        right_shoulder_rgb.save(
-            os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
-        right_shoulder_depth.save(
-            os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
-        right_shoulder_mask.save(
-            os.path.join(right_shoulder_mask_path, IMAGE_FORMAT % i))
-        wrist_rgb.save(os.path.join(wrist_rgb_path, IMAGE_FORMAT % i))
-        wrist_depth.save(os.path.join(wrist_depth_path, IMAGE_FORMAT % i))
-        wrist_mask.save(os.path.join(wrist_mask_path, IMAGE_FORMAT % i))
+        # left_shoulder_rgb.save(
+        #     os.path.join(left_shoulder_rgb_path, IMAGE_FORMAT % i))
+        # left_shoulder_depth.save(
+        #     os.path.join(left_shoulder_depth_path, IMAGE_FORMAT % i))
+        # left_shoulder_mask.save(
+        #     os.path.join(left_shoulder_mask_path, IMAGE_FORMAT % i))
+        # right_shoulder_rgb.save(
+        #     os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
+        # right_shoulder_depth.save(
+        #     os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
+        # right_shoulder_mask.save(
+        #     os.path.join(right_shoulder_mask_path, IMAGE_FORMAT % i))
+        #wrist_rgb.save(os.path.join(wrist_rgb_path, IMAGE_FORMAT % i))
+        #wrist_depth.save(os.path.join(wrist_depth_path, IMAGE_FORMAT % i))
+        #wrist_mask.save(os.path.join(wrist_mask_path, IMAGE_FORMAT % i))
         front_rgb.save(os.path.join(front_rgb_path, IMAGE_FORMAT % i))
         front_depth.save(os.path.join(front_depth_path, IMAGE_FORMAT % i))
         front_mask.save(os.path.join(front_mask_path, IMAGE_FORMAT % i))
@@ -136,11 +139,17 @@ def save_demo(demo, example_path):
         obs.front_depth = None
         obs.front_mask = None
 
+        state = [obs.joint_positions, obs.joint_velocities, [obs.gripper_open, 0, 0, 0, 0, 0, 0], obs.gripper_pose] + obs.task_low_dim_state
+        state_data.append(state)
+        #low_dim_state_data.append(obs.task_low_dim_state)
+
+    np.save(str(example_path + "/state_data.npy"), np.asarray(state_data))
+    #np.save(str(example_path + "/low_dim_state.npy"), np.asarray(low_dim_state_data))
+    
     # Save the low-dimension data
     with open(os.path.join(example_path, LOW_DIM_PICKLE), 'wb') as f:
         pickle.dump(demo, f)
-
-    np.save(str(example_path + "/state_data.npy"), demo)
+    
 
 def run(i, lock, task_index, variation_count, results, file_lock, tasks):
     """Each thread will choose one task and variation, and then gather

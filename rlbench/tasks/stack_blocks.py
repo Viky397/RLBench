@@ -9,21 +9,22 @@ from rlbench.backend.conditions import NothingGrasped
 from rlbench.backend.spawn_boundary import SpawnBoundary
 from rlbench.const import colors
 
-MAX_STACKED_BLOCKS = 2
-DISTRACTORS = 0
+MAX_STACKED_BLOCKS = 3
+DISTRACTORS = 4
+
 
 class StackBlocks(Task):
 
     def init_task(self) -> None:
         self.blocks_stacked = 0
         self.target_blocks = [Shape('stack_blocks_target%d' % i)
-                              for i in range(2)]
+                              for i in range(4)]
         self.distractors = [
             Shape('stack_blocks_distractor%d' % i)
             for i in range(DISTRACTORS)]
 
         self.boundaries = [Shape('stack_blocks_boundary%d' % i)
-                           for i in range(2)]
+                           for i in range(4)]
 
         self.register_graspable_objects(self.target_blocks + self.distractors)
 

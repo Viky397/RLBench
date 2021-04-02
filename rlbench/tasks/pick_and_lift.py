@@ -53,5 +53,5 @@ class PickAndLift(Task):
         return len(colors)
     
     def get_low_dim_state(self) -> dict:
-        return {'target':self.target.get_position(), 'distractor0':self.distractor0.get_position(), 'distractor1':self.distractor1.get_position(),'tip': self.robot.arm.get_tip().get_position()}
+        return [self.target_block.get_pose(), self.distractors[0].get_pose(), self.distractors[1].get_pose()]
 
