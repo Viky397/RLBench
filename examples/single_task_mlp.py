@@ -10,35 +10,20 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.data import DataLoader
 
+def get_activation(name):
+    return getattr(F, name) if name else lambda x: x
 
-class SimpleGCNModel(nn.Module):
 
-    def __init__(self, num_node_features, num_output_channels):
-        super(SimpleGCNModel, self).__init__()
-        hidden_layers = 256
-        self.conv1 = GCNConv(num_node_features, hidden_layers)
-        self.conv2 = GCNConv(hidden_layers, hidden_layers)
-        self.conv3 = GCNConv(hidden_layers, hidden_layers)
-        self.lin = nn.Linear(hidden_layers, 64)
-        self.lin2 = nn.Linear(64, num_output_channels)
+def init_(module):
+    # could have different gains with different activations
+    nn.init.orthogonal_(module.weight.data, gain=1)
+    nn.init.constant_(module.bias.data, 0)
+    return module
 
-    def forward(self, x, edge_index, batch):
 
-        # Node embedding
-        x = F.leaky_relu(self.conv1(x, edge_index))
-        x = F.leaky_relu(self.conv2(x, edge_index))
-        x = self.conv3(x, edge_index)
-
-        # Node aggregation
-        x = global_mean_pool(x, batch)
-
-        x = self.lin(x)
-        x = self.lin2(x)
-
-        return x
-
-class GCNModel(nn.Module):
-    """Just GCN with some customizable things."""
+class MLP(nn.Module):
+    """ MLP network (can be used as value or policy)
+    """
 
     def __init__(self,
                  input_dim,
@@ -46,40 +31,41 @@ class GCNModel(nn.Module):
                  hidden_dims=[],
                  act="relu",
                  output_act=None,
+                 init_weights=False,
                  **kwargs):
-        super(GCNModel, self).__init__()
+        """ multi-layer perception / fully-connected network
+
+        Args:
+            input_dim (int): input dimension
+            output_dim (int): output dimension
+            hidden_dims (list): hidden layer dimensions
+            act (str): hidden layer activation
+            output_act (str): output layer activation
+        """
+        super(MLP, self).__init__()
         dims = [input_dim] + hidden_dims + [output_dim]
+        init_func = init_ if init_weights else lambda x: x
 
-        self.graph_conv = nn.ModuleList(
-            [GCNConv(dims[i], dims[i + 1]) for i in range(len(dims) - 2)])
-        self.output_fc = nn.Linear(dims[-2], dims[-1])
-
+        self.fcs = nn.ModuleList([
+            init_func(nn.Linear(dims[i], dims[i + 1]))
+            for i in range(len(dims) - 1)
+        ])
         self.act = get_activation(act)
         self.output_act = get_activation(output_act)
 
-    def forward(self, x, edge_index, batch):
+    def forward(self, x):
         out = x
-        # Node embedding
-        for graph_conv in self.graph_conv:
-            out = self.act(graph_conv(out, edge_index))
-
-        # Node aggregation
-        out = global_mean_pool(out, batch)
-
-        # final output
-        out = self.output_act(self.output_fc(out))
+        for fc in self.fcs[:-1]:
+            out = self.act(fc(out))
+        out = self.output_act(self.fcs[-1](out))
         return out
-
-
-def get_activation(name):
-    return getattr(F, name) if name else lambda x: x
 
 class Agent(object):
 
     def __init__(self, action_size):
-        self.model = GCNModel(10,
+        self.model = MLP(10,
             7,
-            [256, 256, 256, 256, 256],
+            [128, 128, 128],
             act="tanh",
             output_act=None)
         # One-hot encodings
@@ -87,7 +73,7 @@ class Agent(object):
         self.distract_enc = np.asarray([0, 1, 0])
         self.gripper_enc = np.asarray([0, 0, 1])
 
-        checkpoint = torch.load("/home/veronica/graph-imitation-learning/src/graphs/logs/mustafa_gcn/graph.pth")
+        checkpoint = torch.load("/home/veronica/graph-imitation-learning/src/graphs/logs/mustafa_mlp/mlp.pth")
         self.model.load_state_dict(checkpoint['model_state_dict'])
 
     def act(self, obs):
@@ -146,7 +132,19 @@ for j in range(9):
             descriptions, obs = task.reset()
             print(descriptions)
 
-        action = agent.act(obs)
+        action = agent.act(gripper_position = state_data[k][3][:3],
+                relative_target_position = state_data[k][4][:3] - gripper_position,
+                relative_distractor0_position = state_data[k][5][:3] - gripper_position,
+                relative_distractor1_position = state_data[k][6][:3] - gripper_position,
+
+                target_node = np.concatenate(
+                    [relative_target_position, state_data[k][4][3:], TARGET_ENC]),
+                distract_node = np.concatenate(
+                    [relative_distractor0_position, state_data[k][5][3:], DISTRACT_ENC]),
+                distract2_node = np.concatenate(
+                    [relative_distractor1_position, state_data[k][6][3:], DISTRACT_ENC]),
+                gripper_node = np.concatenate(
+                    [state_data[k][3], GRIPPER_ENC]))
         print(obs.gripper_pose)
         print(action)
         #print("action:", action)
