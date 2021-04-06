@@ -63,7 +63,7 @@ class MLP(nn.Module):
 class Agent(object):
 
     def __init__(self, action_size):
-        self.model = MLP(10,
+        self.model = MLP(40,
             7,
             [128, 128, 128],
             act="tanh",
@@ -96,7 +96,7 @@ class Agent(object):
                                     for j in range(NUM_NODES)
                                     if i != j],
                                     dtype=torch.long)
-
+        flat_x = data.x.reshape(-1, input_dim)
         graph_data = Data(x=nodes, edge_index=edge_index.t().contiguous())
 
         dataset.append(graph_data)
