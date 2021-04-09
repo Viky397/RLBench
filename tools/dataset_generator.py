@@ -24,7 +24,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('save_path',
                     '/home/mustafa/Desktop/',
                     'Where to save the demos.')
-flags.DEFINE_list('tasks', ['pick_and_lift'],
+flags.DEFINE_list('tasks', ['reach_target'],
                   'The tasks to collect. If empty, all tasks are collected.')
 flags.DEFINE_list('image_size', [128, 128],
                   'The size of the images tp save.')
@@ -33,7 +33,7 @@ flags.DEFINE_enum('renderer',  'opengl3', ['opengl', 'opengl3'],
                   'but is faster.')
 flags.DEFINE_integer('processes', 4,
                      'The number of parallel processes during collection.')
-flags.DEFINE_integer('episodes_per_task', 100,
+flags.DEFINE_integer('episodes_per_task', 10000,
                      'The number of episodes to collect per task.')
 flags.DEFINE_integer('variations', -1,
                      'Number of variations to collect per task. -1 for all.')

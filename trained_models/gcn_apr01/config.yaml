@@ -1,0 +1,16 @@
+batch_size: 64
+checkpoint_dir: null
+data_dir: data/reach_target/
+eval: false
+eval_batch_size: 10
+eval_interval: 10
+hidden_dims:
+- 64
+- 64
+log_dir: logs/exp_seed53_Apr01_22-28-14
+max_episode_length: 500
+model_name: graph_model
+num_epochs: 500
+resume: ''
+seed: 53
+tag: exp
