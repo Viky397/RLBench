@@ -21,16 +21,15 @@ import numpy as np
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('save_path',
-                    '/home/mustafa/Desktop/',
+flags.DEFINE_string('save_path', '/home/mustafa/Desktop/',
                     'Where to save the demos.')
 flags.DEFINE_list('tasks', ['reach_target'],
                   'The tasks to collect. If empty, all tasks are collected.')
-flags.DEFINE_list('image_size', [128, 128],
-                  'The size of the images tp save.')
-flags.DEFINE_enum('renderer',  'opengl3', ['opengl', 'opengl3'],
-                  'The renderer to use. opengl does not include shadows, '
-                  'but is faster.')
+flags.DEFINE_list('image_size', [128, 128], 'The size of the images tp save.')
+flags.DEFINE_enum(
+    'renderer', 'opengl3', ['opengl', 'opengl3'],
+    'The renderer to use. opengl does not include shadows, '
+    'but is faster.')
 flags.DEFINE_integer('processes', 4,
                      'The number of parallel processes during collection.')
 flags.DEFINE_integer('episodes_per_task', 10000,
@@ -47,18 +46,18 @@ def check_and_make(dir):
 def save_demo(demo, example_path):
 
     # Save image data first, and then None the image data, and pickle
-    left_shoulder_rgb_path = os.path.join(
-        example_path, LEFT_SHOULDER_RGB_FOLDER)
-    left_shoulder_depth_path = os.path.join(
-        example_path, LEFT_SHOULDER_DEPTH_FOLDER)
-    left_shoulder_mask_path = os.path.join(
-        example_path, LEFT_SHOULDER_MASK_FOLDER)
-    right_shoulder_rgb_path = os.path.join(
-        example_path, RIGHT_SHOULDER_RGB_FOLDER)
-    right_shoulder_depth_path = os.path.join(
-        example_path, RIGHT_SHOULDER_DEPTH_FOLDER)
-    right_shoulder_mask_path = os.path.join(
-        example_path, RIGHT_SHOULDER_MASK_FOLDER)
+    left_shoulder_rgb_path = os.path.join(example_path,
+                                          LEFT_SHOULDER_RGB_FOLDER)
+    left_shoulder_depth_path = os.path.join(example_path,
+                                            LEFT_SHOULDER_DEPTH_FOLDER)
+    left_shoulder_mask_path = os.path.join(example_path,
+                                           LEFT_SHOULDER_MASK_FOLDER)
+    right_shoulder_rgb_path = os.path.join(example_path,
+                                           RIGHT_SHOULDER_RGB_FOLDER)
+    right_shoulder_depth_path = os.path.join(example_path,
+                                             RIGHT_SHOULDER_DEPTH_FOLDER)
+    right_shoulder_mask_path = os.path.join(example_path,
+                                            RIGHT_SHOULDER_MASK_FOLDER)
     wrist_rgb_path = os.path.join(example_path, WRIST_RGB_FOLDER)
     wrist_depth_path = os.path.join(example_path, WRIST_DEPTH_FOLDER)
     wrist_mask_path = os.path.join(example_path, WRIST_MASK_FOLDER)
@@ -102,8 +101,8 @@ def save_demo(demo, example_path):
         # wrist_mask = Image.fromarray((obs.wrist_mask * 255).astype(np.uint8))
 
         front_rgb = Image.fromarray((obs.front_rgb * 255).astype(np.uint8))
-        front_depth = utils.float_array_to_rgb_image(
-            obs.front_depth, scale_factor=DEPTH_SCALE)
+        front_depth = utils.float_array_to_rgb_image(obs.front_depth,
+                                                     scale_factor=DEPTH_SCALE)
         front_mask = Image.fromarray((obs.front_mask * 255).astype(np.uint8))
 
         # left_shoulder_rgb.save(
@@ -139,17 +138,20 @@ def save_demo(demo, example_path):
         obs.front_depth = None
         obs.front_mask = None
 
-        state = [obs.joint_positions, obs.joint_velocities, [obs.gripper_open, 0, 0, 0, 0, 0, 0], obs.gripper_pose] + obs.task_low_dim_state
+        state = [
+            obs.joint_positions, obs.joint_velocities,
+            [obs.gripper_open, 0, 0, 0, 0, 0, 0], obs.gripper_pose
+        ] + obs.task_low_dim_state
         state_data.append(state)
         #low_dim_state_data.append(obs.task_low_dim_state)
 
     np.save(str(example_path + "/state_data.npy"), np.asarray(state_data))
     #np.save(str(example_path + "/low_dim_state.npy"), np.asarray(low_dim_state_data))
-    
+
     # Save the low-dimension data
     with open(os.path.join(example_path, LOW_DIM_PICKLE), 'wb') as f:
         pickle.dump(demo, f)
-    
+
 
 def run(i, lock, task_index, variation_count, results, file_lock, tasks):
     """Each thread will choose one task and variation, and then gather
@@ -163,6 +165,12 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks):
 
     obs_config = ObservationConfig()
     obs_config.set_all(True)
+
+    # NOTE: disable rendering except front camera
+    obs_config.left_shoulder_camera.set_all(False)
+    obs_config.right_shoulder_camera.set_all(False)
+    obs_config.wrist_camera.set_all(False)
+
     obs_config.right_shoulder_camera.image_size = img_size
     obs_config.left_shoulder_camera.image_size = img_size
     obs_config.wrist_camera.image_size = img_size
@@ -179,10 +187,9 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks):
         obs_config.wrist_camera.render_mode = RenderMode.OPENGL
         obs_config.front_camera.render_mode = RenderMode.OPENGL
 
-    rlbench_env = Environment(
-        action_mode=ActionMode(),
-        obs_config=obs_config,
-        headless=True)
+    rlbench_env = Environment(action_mode=ActionMode(),
+                              obs_config=obs_config,
+                              headless=True)
     rlbench_env.launch()
 
     task_env = None
@@ -222,14 +229,13 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks):
         task_env.set_variation(my_variation_count)
         obs, descriptions = task_env.reset()
 
-        variation_path = os.path.join(
-            FLAGS.save_path, task_env.get_name(),
-            VARIATIONS_FOLDER % my_variation_count)
+        variation_path = os.path.join(FLAGS.save_path, task_env.get_name(),
+                                      VARIATIONS_FOLDER % my_variation_count)
 
         check_and_make(variation_path)
 
-        with open(os.path.join(
-                variation_path, VARIATION_DESCRIPTIONS), 'wb') as f:
+        with open(os.path.join(variation_path, VARIATION_DESCRIPTIONS),
+                  'wb') as f:
             pickle.dump(descriptions, f)
 
         episodes_path = os.path.join(variation_path, EPISODES_FOLDER)
@@ -241,24 +247,22 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks):
             while attempts > 0:
                 try:
                     # TODO: for now we do the explicit looping.
-                    demo, = task_env.get_demos(
-                        amount=1,
-                        live_demos=True)
+                    demo, = task_env.get_demos(amount=1, live_demos=True)
                 except Exception as e:
                     attempts -= 1
                     if attempts > 0:
                         continue
                     problem = (
                         'Process %d failed collecting task %s (variation: %d, '
-                        'example: %d). Skipping this task/variation.\n%s\n' % (
-                            i, task_env.get_name(), my_variation_count, ex_idx,
-                            str(e))
-                    )
+                        'example: %d). Skipping this task/variation.\n%s\n' %
+                        (i, task_env.get_name(), my_variation_count, ex_idx,
+                         str(e)))
                     print(problem)
                     tasks_with_problems += problem
                     abort_variation = True
                     break
-                episode_path = os.path.join(episodes_path, EPISODE_FOLDER % ex_idx)
+                episode_path = os.path.join(episodes_path,
+                                            EPISODE_FOLDER % ex_idx)
                 with file_lock:
                     save_demo(demo, episode_path)
                 break
@@ -271,8 +275,11 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks):
 
 def main(argv):
 
-    task_files = [t.replace('.py', '') for t in os.listdir(task.TASKS_PATH)
-                  if t != '__init__.py' and t.endswith('.py')]
+    task_files = [
+        t.replace('.py', '')
+        for t in os.listdir(task.TASKS_PATH)
+        if t != '__init__.py' and t.endswith('.py')
+    ]
 
     if len(FLAGS.tasks) > 0:
         for t in FLAGS.tasks:
@@ -294,11 +301,11 @@ def main(argv):
 
     check_and_make(FLAGS.save_path)
 
-    processes = [Process(
-        target=run, args=(
-            i, lock, task_index, variation_count, result_dict, file_lock,
-            tasks))
-        for i in range(FLAGS.processes)]
+    processes = [
+        Process(target=run,
+                args=(i, lock, task_index, variation_count, result_dict,
+                      file_lock, tasks)) for i in range(FLAGS.processes)
+    ]
     [t.start() for t in processes]
     [t.join() for t in processes]
 
@@ -308,4 +315,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-  app.run(main)
+    app.run(main)
