@@ -21,13 +21,15 @@ class ReachTarget(Task):
 
     def init_episode(self, index: int) -> List[str]:
         color_name, color_rgb = colors[index]
-        self.target.set_color(color_rgb)
-        color_choices = np.random.choice(
-            list(range(index)) + list(range(index + 1, len(colors))),
-            size=2, replace=False)
-        for ob, i in zip([self.distractor0, self.distractor1], color_choices):
-            name, rgb = colors[i]
-            ob.set_color(rgb)
+        # color_choices = np.random.choice(
+        #     list(range(index)) + list(range(index + 1, len(colors))),
+        #     size=2, replace=False)
+        # for ob, i in zip([self.distractor0, self.distractor1], color_choices):
+        #     name, rgb = colors[i]
+        #     ob.set_color(rgb)
+        self.target.set_color((1.0, 0.0, 0.0))
+        self.distractor0.set_color((0.0, 1.0, 0.0))
+        self.distractor1.set_color((0.0, 0.0, 1.0))
         b = SpawnBoundary([self.boundaries])
         for ob in [self.target, self.distractor0, self.distractor1]:
             b.sample(ob, min_distance=0.2,
