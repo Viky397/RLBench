@@ -7,6 +7,9 @@ from rlbench.backend.task import Task
 from rlbench.backend.spawn_boundary import SpawnBoundary
 from rlbench.backend.conditions import DetectedCondition
 
+###
+# A simple variation of the reach_target task
+###
 
 class ReachTargetSimple(Task):
 
